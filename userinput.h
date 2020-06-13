@@ -25,9 +25,11 @@
 
  // Analog input pins:
 
- #define CYCLETIMEPIN A1
- #define CYCLELENGTH  A2
+#define CYCLETIMEPIN A0
+#define CYCLEAMPLITUDEPIN  A1
 
+#define ANALOGMAX 840.0
+#define ANALOGMIN 0.0
 
  // Limits
 

@@ -1,3 +1,4 @@
+
 /*
  * 
  * 
@@ -23,149 +24,113 @@
 
 #include "TimerOne.h"
 #include "userinput.h"
+#include <Stepper.h>
+
 
 #define CENTER 0
-#define STEPPS 200                  // Stepps from one end to the other
+#define STEPPS 100                  // Stepps from one end to the other
+#define INITIAL_STEPPS (STEPPS * 2)
 #define INITIAL_POSSTEP (-STEPPS/2) // From far left to the center, usually STEPPS/2
 
 
 #define ON 1
 #define OFF 0
 
-#define RIGHT 0
-#define LEFT  1
-#define TURN_RIGHT 2
-#define TURN_LEFT 3
-#define TURN 2
 
-volatile uint16_t timetostep = 0; 
-volatile uint8_t pendel_state = OFF;
-uint16_t position_step = INITIAL_POSSTEP;
-static volatile uint8_t steppdir = 0;
 
-void set_position(int pos);
-void goto_extreem_left(void);
-void setup_timer(void);
+Stepper stepper(STEPPS, 6, 4, 5, 7);
 
 void setup() {
-//  init outputs
-
-   INIT_position();
-   Timer1.initialize(10); // 10 us between timer interrupts
-   Timer1.attachInterrupt(timerloop);
-   pinMode(APIN, OUTPUT);
-   pinMode(BPIN, OUTPUT);
+  Serial.begin(9600);
+  stepper.setSpeed(30); // Initial speed in rpms
+  stepper.step(INITIAL_STEPPS); // Move to end stop
+  stepper.step(INITIAL_POSSTEP); // Move back to center
+  Serial.println("Initiated");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+ 
 
-  // input
 
-  while(1)
-  {
-    stepp();
-    delay(100);
-    
-  }
+   // read ADCs
+   // set parameters
 
-}
-void INIT_position(void)
-{
-
-  
+   stepper.setSpeed(rpms(amplitude(), periode_time()));
+   run_cycle(num_of_steps(amplitude()));   
+   Serial.println();
+   Serial.println();
+   
 }
 
 
-void goto_extreem_left(void)
+void test_run(void)
 {
-  int i;
-
-  steppdir = 0;
-
-  for(i=0; i<(STEPPS * 4); i++)
-  {
-    stepp();
-  }
+//stepper.setSpeed(120);
+  stepper.step(STEPPS/2);
+  delay(10);
+  stepper.step(-STEPPS);
+  delay(10);
+  stepper.step(STEPPS/2);
+  delay(1000);
 }
 
-/*
- * Timer loop, looptime = 10 us
- * 
- * Minimum number of 10 us counts in one step i approximatly 125
- */
-void timerloop()
+void run_cycle(int steps)
 {
+  stepper.step(steps);
+  delay(10);
+  stepper.step(steps * -2);
+  delay(10);
+  stepper.step(steps);
 
-  
-  if(--timetostep == 0)
-  {
-    timetostep = 92;
-    stepp();
-  }
-  
-}
-
-/*
- * Updates the direction pin, enables the STEPPIN etc based on position. 
- * 
- */
-
-void update_step(void)
-{
-  static int16_t position_step = INITIAL_POSSTEP;
-}
-
-/**
-@brief Calculation the time between steps in micro seconds.
-@returns time between each step
-@arg pendel-frequency [Hz]
-@arg max-travle [steps]
-**/
-uint32_t timebetweensteps_us(float pendlefrequency, uint16_t steps)
-{
-  float timebetweensteps = 1250; // default if no valid input
-  if(steps > 0)
-    timebetweensteps = 1.0 / pendle-frequency * (float)steps;
-  return((int)timebetweensteps);
 }
 
 
-void stepp(void)
+/// Reads analouge input and returns the amplitude in the interval [0.2, 1.0]
+float amplitude(void)
 {
-  static int8_t pos=0;
-  static uint8_t table[8] = {3,2,6,4,12,8,9,1};
+  float input;
+  input = analogRead( CYCLEAMPLITUDEPIN);
+  input = input / ANALOGMAX;
+  if(input < 0.2)
+    input = 0.2;
+  Serial.print("Amplitude: ");
+  Serial.println(input);    
+  return(input);
+}
 
-  switch(steppdir)
-  {
-    case RIGHT:    
-      pos++;
-      if(pos>=8)
-        pos = 0;
-      break;
-      
-    case LEFT:
-      pos--;
-      if(pos<=0)
-        pos = 7;
-      break;
-      
-    case TURN_RIGHT:
-      steppdir = RIGHT;
-      return; 
 
-    case TURN_LEFT:
-      steppdir = LEFT;
-      return; 
-  }
-  
-  if(table[pos] & 1)
-    digitalWrite(APIN, HIGH);
-  else
-    digitalWrite(APIN, LOW);
+/// Reads analouge input and returns the frequency in the interval [0.5, 3.0] 
+float periode_time(void)
+{  
+  float input;
+  input = analogRead( CYCLETIMEPIN);
+  Serial.print("Cycle time: ");
+  Serial.println(0.5 + ( (2.5 * input) / ANALOGMAX ));
+  return( 0.5 + ( (2.5 * input) / ANALOGMAX ));
+}
 
-  if(table[pos] & 2)
-    digitalWrite(BPIN, HIGH);
-  else
-    digitalWrite(BPIN, LOW);
+
+/// Calculates the RPM of the stepper motor with the given amplitude and periode time.
+int rpms(float amplitude, float periode)
+{
+  float rpms;
+  int temp;
+  rpms = amplitude * (1/periode) * 60.0;
+  Serial.print("rpms: ");
+  Serial.println(rpms);
+  if(rpms < 4.0)
+    rpms = 4.0; // minimum value  
+  return((int) rpms);  
+}
+
+
+/// Returns the number of steps from one end to the other with the given amplitude
+int num_of_steps(float amplitude)
+{
+   float steps;
+   steps = STEPPS; // Get STEPPS to float)
+   steps = steps * amplitude * 0.5;
+   Serial.print("Number of steps: ");
+   Serial.println(steps);
+   return((int)steps);
 }

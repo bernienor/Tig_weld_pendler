@@ -39,8 +39,8 @@
 
 // Stepper motor interface
 
-#define STEPPIN   5
-#define DIRPIN     6
+#define APIN   5
+#define BPIN   6
 
 // user input buttons 
 #define ONOFF_PIN   3

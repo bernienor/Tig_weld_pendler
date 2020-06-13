@@ -21,52 +21,59 @@
 - Kalibrering ut til -90° når strøm slås på 
  */
 
+#include "TimerOne.h"
 #include "userinput.h"
 
 #define CENTER 0
-#define STEPPS 200 // Stepps from one end to the other
-#define FAR_LEFT (-STEPPS/2) // From faar left to the center, usually STEPPS/2
+#define STEPPS 200                  // Stepps from one end to the other
+#define INITIAL_POSSTEP (-STEPPS/2) // From far left to the center, usually STEPPS/2
+
 
 #define ON 1
 #define OFF 0
 
+#define RIGHT 0
+#define LEFT  1
+#define TURN_RIGHT 2
+#define TURN_LEFT 3
+#define TURN 2
+
 volatile uint16_t timetostep = 0; 
 volatile uint8_t pendel_state = OFF;
-uint16_t sposition = 0;
+uint16_t position_step = INITIAL_POSSTEP;
+static volatile uint8_t steppdir = 0;
 
 void set_position(int pos);
-void   goto_extreem_left(void);
+void goto_extreem_left(void);
+void setup_timer(void);
 
 void setup() {
 //  init outputs
 
-  goto_extreem_left();
-
-  //goto_pos(CENTER);
-  setup_timer();
-  
+   INIT_position();
+   Timer1.initialize(10); // 10 us between timer interrupts
+   Timer1.attachInterrupt(timerloop);
+   pinMode(APIN, OUTPUT);
+   pinMode(BPIN, OUTPUT);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
 
-
-
-//init()
-//Go_to_extreem_left()
-//Go_to_center()
+  // input
 
   while(1)
   {
-    if(digitalRead(ONOFF_PIN))
-      pendel_state=ON;
-    //Update_pendle(speed(analoginput_1),ampliture(analoginput_2));
+    stepp();
+    delay(100);
+    
   }
 
 }
-void set_position(int pos)
+void INIT_position(void)
 {
-  sposition = pos;
+
+  
 }
 
 
@@ -74,16 +81,12 @@ void goto_extreem_left(void)
 {
   int i;
 
-  digitalWrite(DIRPIN, HIGH);
+  steppdir = 0;
 
-  for(i=0; i<(STEPPS * 2); i++)
+  for(i=0; i<(STEPPS * 4); i++)
   {
-    digitalWrite(STEPPIN, HIGH);
-    delay(5);
-    digitalWrite(STEPPIN, LOW);
-    delay(5);    
+    stepp();
   }
-  set_position(FAR_LEFT);  
 }
 
 /*
@@ -94,21 +97,23 @@ void goto_extreem_left(void)
 void timerloop()
 {
 
-  if(timetostep < 10)
-  {
-    digitalWrite(STEPPIN, HIGH);
-  }
-  else
-  {
-    digitalWrite(STEPPIN, LOW);
-  }
   
   if(--timetostep == 0)
   {
-    timetostep = 125;
+    timetostep = 92;
+    stepp();
   }
   
+}
 
+/*
+ * Updates the direction pin, enables the STEPPIN etc based on position. 
+ * 
+ */
+
+void update_step(void)
+{
+  static int16_t position_step = INITIAL_POSSTEP;
 }
 
 /**
@@ -117,18 +122,50 @@ void timerloop()
 @arg pendel-frequency [Hz]
 @arg max-travle [steps]
 **/
-
-
 uint32_t timebetweensteps_us(float pendlefrequency, uint16_t steps)
 {
   float timebetweensteps = 1250; // default if no valid input
   if(steps > 0)
-//    timebetweensteps = pendle-frequency / (float)steps;
+    timebetweensteps = 1.0 / pendle-frequency * (float)steps;
   return((int)timebetweensteps);
 }
 
-void   setup_timer(void)
-{
 
+void stepp(void)
+{
+  static int8_t pos=0;
+  static uint8_t table[8] = {3,2,6,4,12,8,9,1};
+
+  switch(steppdir)
+  {
+    case RIGHT:    
+      pos++;
+      if(pos>=8)
+        pos = 0;
+      break;
+      
+    case LEFT:
+      pos--;
+      if(pos<=0)
+        pos = 7;
+      break;
+      
+    case TURN_RIGHT:
+      steppdir = RIGHT;
+      return; 
+
+    case TURN_LEFT:
+      steppdir = LEFT;
+      return; 
+  }
   
+  if(table[pos] & 1)
+    digitalWrite(APIN, HIGH);
+  else
+    digitalWrite(APIN, LOW);
+
+  if(table[pos] & 2)
+    digitalWrite(BPIN, HIGH);
+  else
+    digitalWrite(BPIN, LOW);
 }

@@ -36,16 +36,20 @@
 #define ON 1
 #define OFF 0
 
-
+//#define DEBUG 
 
 Stepper stepper(STEPPS, 6, 4, 5, 7);
 
 void setup() {
-  Serial.begin(9600);
   stepper.setSpeed(30); // Initial speed in rpms
   stepper.step(INITIAL_STEPPS); // Move to end stop
   stepper.step(INITIAL_POSSTEP); // Move back to center
+
+  Serial.begin(9600);
   Serial.println("Initiated");
+#ifndef DEBUG
+  Serial.println("No debug info");
+#endif
 }
 
 void loop() {
@@ -57,9 +61,10 @@ void loop() {
 
    stepper.setSpeed(rpms(amplitude(), periode_time()));
    run_cycle(num_of_steps(amplitude()));   
+#ifdef DEBUG
    Serial.println();
    Serial.println();
-   
+#endif   
 }
 
 
@@ -93,8 +98,12 @@ float amplitude(void)
   input = input / ANALOGMAX;
   if(input < 0.2)
     input = 0.2;
+
+#ifdef DEBUG
   Serial.print("Amplitude: ");
   Serial.println(input);    
+#endif
+
   return(input);
 }
 
@@ -104,8 +113,12 @@ float periode_time(void)
 {  
   float input;
   input = analogRead( CYCLETIMEPIN);
+
+#ifdef DEBUG
   Serial.print("Cycle time: ");
   Serial.println(0.5 + ( (2.5 * input) / ANALOGMAX ));
+#endif
+
   return( 0.5 + ( (2.5 * input) / ANALOGMAX ));
 }
 
@@ -116,8 +129,12 @@ int rpms(float amplitude, float periode)
   float rpms;
   int temp;
   rpms = amplitude * (1/periode) * 60.0;
+
+#ifdef DEBUG
   Serial.print("rpms: ");
   Serial.println(rpms);
+#endif
+
   if(rpms < 4.0)
     rpms = 4.0; // minimum value  
   return((int) rpms);  
@@ -130,7 +147,11 @@ int num_of_steps(float amplitude)
    float steps;
    steps = STEPPS; // Get STEPPS to float)
    steps = steps * amplitude * 0.5;
+
+#ifdef DEBUG
    Serial.print("Number of steps: ");
    Serial.println(steps);
+#endif
+
    return((int)steps);
 }

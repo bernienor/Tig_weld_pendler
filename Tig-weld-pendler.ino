@@ -33,14 +33,13 @@
 #define INITIAL_POSSTEP (-STEPPS/2) // From far left to the center, usually STEPPS/2
 
 
-#define ON 1
-#define OFF 0
-
 //#define DEBUG 
 
 Stepper stepper(STEPPS, 6, 4, 5, 7);
 
-void setup() {
+void setup() 
+{
+  pinMode(ONOFF_PIN, INPUT_PULLUP);
   stepper.setSpeed(30); // Initial speed in rpms
   stepper.step(INITIAL_STEPPS); // Move to end stop
   stepper.step(INITIAL_POSSTEP); // Move back to center
@@ -52,12 +51,10 @@ void setup() {
 #endif
 }
 
-void loop() {
- 
-
-
-   // read ADCs
-   // set parameters
+void loop() 
+{
+  while(digitalRead(ONOFF_PIN))
+    ; // Wait for go.
 
    stepper.setSpeed(rpms(amplitude(), periode_time()));
    run_cycle(num_of_steps(amplitude()));   

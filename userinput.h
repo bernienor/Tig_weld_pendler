@@ -39,12 +39,8 @@
 #define MINCYCLELENGTH 5.0  // defines the treashold for stopping the cyclic movement 
 #define MAXCYCLELENGTH 90.0
 
-// Stepper motor interface
-
-#define APIN   5
-#define BPIN   6
 
 // user input buttons 
-#define ONOFF_PIN   3
+#define ONOFF_PIN   3  // Pull up on pin.
 
 #endif

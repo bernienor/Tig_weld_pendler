@@ -22,7 +22,6 @@
 - Kalibrering ut til -90° når strøm slås på 
  */
 
-#include "TimerOne.h"
 #include "userinput.h"
 #include <Stepper.h>
 
